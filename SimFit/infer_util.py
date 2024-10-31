@@ -1,18 +1,9 @@
 import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer, InputExample, losses
-from sentence_transformers.losses import MultipleNegativesRankingLoss,CoSENTLoss,ContrastiveLoss
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
-from evaluators.CosineSimilarityEvaluator import CosineSimilarityEvaluator
-from torch.utils.data import DataLoader
-from sentence_transformers.evaluation import SimilarityFunction
+from sentence_transformers import SentenceTransformer
 import os
-import csv
-from typing import Optional
-from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from sklearn.metrics import precision_score, recall_score, f1_score, cohen_kappa_score, matthews_corrcoef
-from train_util import generate_negative_pairs
-from function_map import model_mapping, loss_function_mapping, eval_function_mapping
+from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter
 from tqdm import tqdm
 
@@ -68,6 +59,33 @@ def calculate_metrics(predicted_indices, target_indices):
     results = {"accuracy": accuracy, "kappa": kappa, "mcc": mcc, "macro_precision": macro_precision, "macro_recall": macro_recall, "macro_f1": macro_f1}
 
     return results
+
+
+
+def top_k_accuracy(inputs_emb, targets_set_emb, labels, k_range:list, sim_function = cosine_similarity):
+    """
+    k_range is the range of k values we want to calculate accuracies for. It should be a list of all k values to test.
+    """
+    similarity_scores = sim_function(inputs_emb, targets_set_emb)
+    result = []
+
+    # Iterate over each row
+    for k in k_range:
+        result_per_k = np.zeros(similarity_scores.shape[0])
+        for i in range(similarity_scores.shape[0]):
+            # Get the current row
+            row = similarity_scores[i]
+            # Find the k largest values in the row
+            # We use np.partition to get the k largest elements at the end of the array
+            top_k_values = np.partition(row, -k)[-k:]
+            # Check if the value at the given index is in these top k values
+            if row[labels[i]] in top_k_values:
+                result_per_k[i] = True
+            else:
+                result_per_k[i] = False
+        result.append(np.mean(result_per_k)) # result is a list of all the top k accuracy for each k value
+
+    return result
 
 def calculate_classwise_metrics(targets, predicted_classes, model_path, class_col = "NOVCodeDescription"):
    

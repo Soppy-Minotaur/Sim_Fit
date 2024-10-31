@@ -6,6 +6,7 @@ import torch
 import csv
 import pandas as pd
 import os
+import gc
 
 # Create the dataset class and dataset objects
 class Dataset(torch.utils.data.Dataset):
@@ -88,7 +89,7 @@ def hyperparam_search(train_dataset, val_dataset, class_set_dict, n_trials, outp
                 trial.value  # The evaluation score (objective)
             ])"""
 
-def train_setfit(train_dataset, val_dataset, class_set_dict, output_path, model, max_iter, solver, body_learning_rate, num_epochs, batch_size, 
+def train_setfit(train_dataset, val_dataset, class_set_dict, output_path, model, max_iter, solver, body_learning_rate, head_learning_rate, num_epochs, batch_size, 
                  text_col="DetailsofViolation", class_col="NOVCodeDescription"):
     """
     model can be "BAAI/bge-small-en-v1.5"
@@ -101,18 +102,21 @@ def train_setfit(train_dataset, val_dataset, class_set_dict, output_path, model,
     # Map string labels to integers for both train and test datasets
     dataset = dataset.map(lambda x: map_labels(x, class_set_dict))
     train_dataset = dataset['train']
-    test_dataset = dataset['test']
+    val_dataset = dataset['test']
     model = SetFitModel.from_pretrained(model, head_params={"max_iter": max_iter,"solver": solver})
-
+    body_learning_rate = tuple(map(float, body_learning_rate.split(',')))
+    num_epochs = tuple(map(int, num_epochs.split(',')))
+    batch_size = tuple(map(int, batch_size.split(',')))
     training_args = TrainingArguments(   
     num_epochs=num_epochs,      
     body_learning_rate=body_learning_rate,  
+    head_learning_rate = head_learning_rate,
     batch_size=batch_size)
 
     trainer = Trainer(
         model=model,
         train_dataset=train_dataset,
-        eval_dataset=test_dataset, 
+        eval_dataset=val_dataset, 
         args=training_args, 
         )
 
@@ -130,4 +134,16 @@ def train_setfit(train_dataset, val_dataset, class_set_dict, output_path, model,
     model.save_pretrained(output_path)
     metrics = trainer.evaluate()
     print(metrics)
+
+    
+    del metrics
+    del trainer
+    del model
+    del train_dataset
+    del val_dataset
+    del dataset
+    print(f"Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
+ 
+    gc.collect()
+    torch.cuda.empty_cache()
 

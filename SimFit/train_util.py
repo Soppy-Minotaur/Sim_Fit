@@ -2,6 +2,7 @@ import csv
 import os
 import random
 import pandas as pd
+from pathlib import Path
 
 
 def generate_negative_pairs(input_file, output_file, neg_samp_ratio=4, neg_rep="0"):
@@ -86,20 +87,37 @@ def write_results(training_params:dict, results:dict, output_path:str):
         writer.writerows(training_params + results)
 
 
-def fetch_biencoder_datasets(biencoder_model_path,ce_output_path):
+def fetch_biencoder_datasets(biencoder_model_path,ce_output_path, require_train_negatives=True, require_val_negatives=True):
     
     # Preparing Bi-Encoder data
     original_train_df = pd.read_csv(os.path.join(biencoder_model_path,"dataset","train_dataset.csv"))
     shots = original_train_df.shape[0] / 83
     
-    if os.path.join(biencoder_model_path,"dataset","train_dataset_wneg.csv").is_file():
-        train_dataset = os.path.join(biencoder_model_path,"dataset","train_dataset_wneg.csv")
-
+    if require_train_negatives:
+        if Path(os.path.join(biencoder_model_path, "dataset", "train_dataset_wneg.csv")).is_file():
+            train_dataset = os.path.join(biencoder_model_path,"dataset","train_dataset_wneg.csv")
+        else:
+            generate_negative_pairs(os.path.join(biencoder_model_path,"dataset", 'train_dataset.csv'), os.path.join(ce_output_path,'ce_train_dataset_wneg.csv'), train_neg_ratio=8)
+            train_dataset = os.path.join(ce_output_path,"ce_train_dataset_wneg.csv")
     else:
-        generate_negative_pairs(os.path.join(biencoder_model_path,"dataset", 'train_dataset.csv'), os.path.join(ce_output_path,'ce_train_dataset_wneg.csv'), train_neg_ratio)
-        train_dataset = os.path.join(ce_output_path,"ce_train_dataset_wneg.csv")
-    
-    val_dataset = os.path.join(biencoder_model_path,"dataset","val_dataset_wneg.csv")
-    test_dataset = os.path.join(biencoder_model_path,"dataset","test_dataset_wneg.csv")
+        train_dataset = os.path.join(biencoder_model_path,"dataset","train_dataset.csv")
+
+    if require_val_negatives:
+        if Path(os.path.join(biencoder_model_path, "dataset", "val_dataset_wneg.csv")).is_file():
+            val_dataset = os.path.join(biencoder_model_path,"dataset","val_dataset_wneg.csv")
+        else:
+            generate_negative_pairs(os.path.join(biencoder_model_path,"dataset", 'val_dataset.csv'), os.path.join(ce_output_path,'ce_val_dataset_wneg.csv'), val_neg_ratio=4)
+            val_dataset = os.path.join(ce_output_path,"ce_val_dataset_wneg.csv")
+    else:
+        val_dataset = os.path.join(biencoder_model_path,"dataset","val_dataset.csv")
+
+    test_dataset = os.path.join(biencoder_model_path,"dataset","test_dataset.csv")
     
     return train_dataset, val_dataset, test_dataset, shots
+
+def get_class_set(train_dataset:str, class_col:str="NOVCodeDescription"):
+    """
+    Returns the set of classes in the training dataset
+    """
+    train_df = pd.read_csv(train_dataset)
+    return tuple(train_df[class_col].unique())

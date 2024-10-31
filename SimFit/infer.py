@@ -3,8 +3,8 @@ import numpy as np
 import os
 from typing import Optional
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
-from infer_util import encode
-from ..Evaluation.evaluation import calculate_metrics
+from .infer_util import encode
+from Evaluation.evaluation import calculate_metrics
 
 def evaluate(model_path:str, test_dataset:Optional[str]=None, text_col:str="DetailsofViolation", class_col:str="NOVCodeDescription"):
     """
@@ -18,11 +18,16 @@ def evaluate(model_path:str, test_dataset:Optional[str]=None, text_col:str="Deta
     predicted_indices, predicted_classes = predict(inputs_emb, targets_set_emb, targets_set)
     metrics = calculate_metrics(predicted_indices, target_indices)
 
-    results = {"Metrics":metrics,"Inputs":inputs,"Predicted Classes":predicted_classes,"Target Classes":target_classes}
+    results = {"Metrics":metrics,"Inputs":inputs,"Predicted Classes":predicted_classes,"Target Classes":target_classes,
+               "Class Set":targets_set,"Predicted Indices":predicted_indices,"Target Indices":target_indices}
 
     return results
 
 def predict(inputs_emb, targets_set_emb, targets_set, sim_function = cosine_similarity):
+    """
+    Function to take in embeddings of inputs and targets, and output the predicted classes indices and texts for each input.
+    """
+
     # Computing similarity scores (each row one input, each column one class)
     similarity_scores = sim_function(inputs_emb, targets_set_emb)
     # Outputing a list of which index on each row has the highest value

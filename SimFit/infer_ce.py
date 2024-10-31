@@ -1,7 +1,7 @@
 from typing import Optional
 import numpy as np
-from infer_util import encode
-from ..Evaluation.evaluation import calculate_metrics
+from .infer_util import encode
+from Evaluation.evaluation import calculate_metrics
 from sentence_transformers.cross_encoder import CrossEncoder
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 

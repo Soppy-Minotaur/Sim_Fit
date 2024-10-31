@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-from function_map import tokenizer_class_mapping, tokenizer_name_mapping, model_class_mapping, model_name_mapping
 import csv
 import os
 import numpy as np

@@ -3,6 +3,8 @@ from setfit import SetFitModel, Trainer
 from typing import Optional
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, cohen_kappa_score, matthews_corrcoef
+import gc
+import torch
 
 def get_mapping_labels(train_dataset, class_col="NOVCodeDescription"):
     train_df = pd.read_csv(train_dataset)
@@ -40,11 +42,21 @@ def evaluate_setfit(model_path:str, class_set_dict, test_dataset:Optional[str]=N
 
     # Map string labels to integers for both train and test datasets
     dataset = dataset.map(lambda x: map_labels(x, class_set_dict))
-    val_dataset = dataset['test'] 
+    test_dataset = dataset['test'] 
     model = SetFitModel.from_pretrained(model_path)
 
-    trainer = Trainer(eval_dataset=val_dataset,model=model, metric=compute_metrics_setfit)
+    trainer = Trainer(eval_dataset=test_dataset,model=model, metric=compute_metrics_setfit)
 
     metrics = trainer.evaluate()
+
+    del trainer
+    del model
+    del test_dataset
+    del dataset
+  
+   
+    print(f"Allocated memory: {torch.cuda.memory_allocated() / 1024 ** 2} MB")
+    gc.collect()
+    torch.cuda.empty_cache()
 
     return metrics

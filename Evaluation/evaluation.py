@@ -32,20 +32,20 @@ def calculate_metrics(predicted_indices, target_indices):
 
     return results
 
-def calculate_classwise_metrics(targets, predicted_classes, model_path, class_col = "NOVCodeDescription"):
-   
-    class_counts = Counter(targets)
+def calculate_classwise_metrics(target_indices, predicted_indices, class_set, output_path):
+
+    class_counts = Counter(target_indices)
     class_metrics = []
 
-    for class_label in tqdm(class_counts.keys(), desc="Computing metrics"):
+    for class_index in tqdm(class_counts.keys(), desc="Computing metrics"):
         # calculate metrics per class
         true_positive, false_positive, true_negative, false_negative = 0, 0, 0, 0
-        for true_label, pred_label in zip(targets, predicted_classes):
-            if true_label == class_label and pred_label == class_label:
+        for true_label, pred_label in zip(target_indices, predicted_indices):
+            if true_label == class_index and pred_label == class_index:
                 true_positive += 1
-            elif true_label == class_label and pred_label != class_label:
+            elif true_label == class_index and pred_label != class_index:
                 false_negative += 1
-            elif true_label != class_label and pred_label == class_label:
+            elif true_label != class_index and pred_label == class_index:
                 false_positive += 1
             else:
                 true_negative += 1
@@ -62,27 +62,18 @@ def calculate_classwise_metrics(targets, predicted_classes, model_path, class_co
             f1 = 0
         else:
             f1 = 2 * (precision * recall) / (precision + recall)
-        
-        # get the number of occurrences in the whole dataset
-        # Note, train_df and val_df uses the original csv without the inclusion of negative samples, since the raw
-        # positive occurrences of those classes is what matters
-        train_df = pd.read_csv(os.path.join(model_path,"dataset","train_dataset.csv"))
-        val_df = pd.read_csv(os.path.join(model_path,"dataset","val_dataset.csv"))
-        test_df = pd.read_csv(os.path.join(model_path,"dataset","test_dataset.csv"))
-        train_count = train_df[class_col].value_counts().get(class_label, 0)
-        val_count = val_df[class_col].value_counts().get(class_label, 0)
-        test_count = test_df[class_col].value_counts().get(class_label, 0)
-        dataset_count = train_count + val_count + test_count
 
+        class_name = class_set[class_index]
         # append the class's data
-        class_metrics.append((class_label, train_count, val_count, class_counts[class_label], dataset_count, precision, recall, f1))
+        class_metrics.append((class_name, class_counts[class_index], precision, recall, f1))
         
     # Create a pandas DataFrame from the class_metrics list
     print("Classwise metrics calculated.")
-    classwise_metric_df = pd.DataFrame(class_metrics, columns=['Static Code Description', 'No. in training', 'No. in validation', 'No. in testing', 'No. in total', 'Precision', 'Recall', 'F1'])
-    sorted_classwise_metric_df = classwise_metric_df.sort_values(by='No. in training', ascending=False)
-    output_path = os.path.join(model_path,'classwise_testing_results')
+    classwise_metric_df = pd.DataFrame(class_metrics, columns=['Static Code Description', 'No. of Test Examples', 'Precision', 'Recall', 'F1'])
+    sorted_classwise_metric_df = classwise_metric_df.sort_values(by='No. of Test Examples', ascending=False)
     os.makedirs(output_path, exist_ok=True)
     sorted_classwise_metric_df.to_csv(os.path.join(output_path,"classwise_metrics.csv"), index=False)
 
     return sorted_classwise_metric_df
+
+

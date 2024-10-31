@@ -1,6 +1,7 @@
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import RobertaTokenizer, RobertaForSequenceClassification
 from transformers import XLNetTokenizer, XLNetForSequenceClassification
+from transformers import LlamaForCausalLM, LlamaTokenizer
 
 def model_class_mapping(model):
     if model == 'BertForSequenceClassification':
@@ -18,4 +19,14 @@ def tokenizer_class_mapping(tokenizer):
         return RobertaTokenizer
     elif tokenizer == 'XLNetTokenizer':
         return XLNetTokenizer
+    
+def model_mapping(model_name):
+    if model_name == 'meta-llama/Llama-2-7b-hf':
+        return LlamaForCausalLM.from_pretrained(model_name)
+   
+    
+def tokenizer_mapping(model_name):
+    if model_name == 'meta-llama/Llama-2-7b-hf':
+        return LlamaTokenizer.from_pretrained(model_name)
+    
 

@@ -1,14 +1,13 @@
-from typing import Optional
+
 import numpy as np
 import torch
 import os
-from transformers import DistilBertForSequenceClassification, TrainingArguments, Trainer
+from transformers import TrainingArguments, Trainer
 import os
 import pandas as pd
 from sklearn.metrics import precision_score, recall_score, f1_score, cohen_kappa_score, matthews_corrcoef
 import csv
-from function_map import tokenizer_class_mapping, model_class_mapping
-from ...Evaluation.evaluation import calculate_metrics
+from Evaluation.evaluation import calculate_metrics
 
 class Dataset(torch.utils.data.Dataset):
         def __init__(self, encodings, labels):
@@ -21,7 +20,7 @@ class Dataset(torch.utils.data.Dataset):
         def __len__(self):
             return len(self.labels)
 
-def evaluate_tc(model,tokenizer, output_path,test_dataset,class_set,text_col="DetailsofViolation",class_col="NOVCodeDescription"):
+def evaluate_tc(model,tokenizer,output_path,test_dataset,class_set,text_col="DetailsofViolation",class_col="NOVCodeDescription"):
     """
     Infer with a selected traditioal classification model. 
 
@@ -34,8 +33,10 @@ def evaluate_tc(model,tokenizer, output_path,test_dataset,class_set,text_col="De
 
     inputs = test_df[text_col].to_list()
     target_indices = test_df[class_col].to_list()
-    class_set = class_set_df[class_col].to_numpy()
+    target_indices = list(map(int, target_indices))
+    class_set = class_set_df["class_name"].to_numpy()
     test_encodings = tokenizer(inputs, truncation=True, padding=True)
+    print("testing set tokenized")
     
     test_dataset = Dataset(test_encodings, target_indices)
 
