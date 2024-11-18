@@ -2,6 +2,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import RobertaTokenizer, RobertaForSequenceClassification
 from transformers import XLNetTokenizer, XLNetForSequenceClassification
 from transformers import LlamaForCausalLM, LlamaTokenizer
+import torch
 
 def model_class_mapping(model):
     if model == 'BertForSequenceClassification':
@@ -22,7 +23,7 @@ def tokenizer_class_mapping(tokenizer):
     
 def model_mapping(model_name):
     if model_name == 'meta-llama/Llama-2-7b-hf':
-        return LlamaForCausalLM.from_pretrained(model_name)
+        return LlamaForCausalLM.from_pretrained(model_name,load_in_8bit=True, device_map="auto")
    
     
 def tokenizer_mapping(model_name):

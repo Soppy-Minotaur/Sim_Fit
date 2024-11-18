@@ -72,7 +72,7 @@ def evaluate_icl_no_training(model_name, train_dataset, test_dataset, shot, text
     tokenizer.pad_token = tokenizer.eos_token
     model = model_mapping(model_name)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    #model.to(device)
     batch_size = 32  
     predicted_classes = []
 
